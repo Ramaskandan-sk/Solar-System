@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solaris 3D | Interactive Solar System & Eclipse Simulator</title>
+  <meta name="description" content="Cinematic 3D Solar System & Solar Eclipse simulation built with Three.js. Explore real-time planetary orbits, celestial mechanics, and total eclipse totality in photorealistic 3D.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Three.js, OrbitControls, and GSAP via official CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+  <!-- Ambient Space Atmosphere Vignette -->
+  <div class="space-vignette"></div>
+
+  <!-- Three.js WebGL Canvas Container -->
+  <div id="webgl-container"></div>
+
+  <!-- Top Glassmorphism Navigation Bar -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-symbol">
+        <div class="sun-icon"></div>
+        <div class="moon-icon"></div>
+      </div>
+      <div class="brand-title">
+        <h1>SOLARIS <span>3D</span></h1>
+        <p class="tagline">CELESTIAL LAB &bull; ECLIPSE OBSERVATORY</p>
+      </div>
+    </div>
+
+    <!-- Quick Mode Badges -->
+    <div class="event-banner" id="eclipse-status-pill">
+      <span class="status-dot"></span>
+      <span class="status-label">Solar Eclipse Mode Ready</span>
+    </div>
+
+    <!-- Top Right Controls -->
+    <div class="nav-actions">
+      <button id="btn-audio" class="glass-btn icon-btn" title="Toggle Cosmic Ambience">
+        <span class="icon" id="audio-icon">&#128263;</span>
+        <span class="label">Sound Off</span>
+      </button>
+      <button id="btn-cinematic" class="glass-btn primary-glow" title="Auto Cinematic Camera Tour">
+        <span class="icon">&#9654;</span>
+        <span class="label">Cosmic Tour</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Special Eclipse Totality Simulation Overlay (Active in Eclipse Mode) -->
+  <div id="eclipse-overlay" class="eclipse-hud hidden">
+    <div class="eclipse-card glass-panel">
+      <div class="eclipse-card-header">
+        <div class="eclipse-badge">TOTALITY SIMULATOR</div>
+        <h2>Solar Eclipse Alignment</h2>
+        <p>Sun &bull; Moon &bull; Earth Umbral Path</p>
+      </div>
+
+      <div class="eclipse-controls-body">
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>Alignment Progress</span>
+            <span id="eclipse-pct-label" class="highlight-val">100% (Totality)</span>
+          </div>
+          <input type="range" id="eclipse-slider" min="0" max="100" value="100" step="1">
+          <div class="slider-markers">
+            <span>First Contact</span>
+            <span>Totality</span>
+            <span>Fourth Contact</span>
+          </div>
+        </div>
+
+        <div class="eclipse-actions">
+          <button id="btn-play-eclipse" class="action-btn glow">
+            <span class="btn-icon">&#9658;</span> Animate Eclipse
+          </button>
+          <button id="btn-exit-eclipse" class="action-btn secondary">
+            Exit to Orbit
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Planet Telemetry & Details Panel (Side HUD) -->
+  <aside class="telemetry-panel glass-panel" id="planet-panel">
+    <div class="panel-header">
+      <div class="target-indicator">
+        <span class="indicator-pulse"></span>
+        <span class="target-title">TARGET LOCKED</span>
+      </div>
+      <button id="panel-close-btn" class="close-btn" title="Close Panel">&times;</button>
+    </div>
+
+    <div class="planet-hero">
+      <div class="planet-type-badge" id="planet-category">STAR</div>
+      <h2 id="planet-name">The Sun</h2>
+      <p class="planet-latin" id="planet-latin">Sol &bull; G-Type Main-Sequence</p>
+    </div>
+
+    <p class="planet-summary" id="planet-desc">
+      The luminous heart of our solar system, generating tremendous energy through hydrogen thermonuclear fusion at 15 million kelvins.
+    </p>
+
+    <!-- Planetary Metric Grid -->
+    <div class="telemetry-grid">
+      <div class="metric-box">
+        <span class="metric-label">Diameter</span>
+        <span class="metric-val" id="val-diameter">1,392,700 km</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Sun Distance</span>
+        <span class="metric-val" id="val-distance">0 AU</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Orbital Period</span>
+        <span class="metric-val" id="val-orbit">230 Myr</span>
+      </div>
+      <div class="metric-box">
+        <span class="metric-label">Surface Temp</span>
+        <span class="metric-val" id="val-temp">5,500 °C</span>
+      </div>
+    </div>
+
+    <!-- Quick Cosmic Fact -->
+    <div class="fact-card">
+      <div class="fact-title">&#9733; ASTRONOMICAL PHENOMENON</div>
+      <p id="planet-fact" class="fact-text">
+        During a Total Solar Eclipse, the Moon covers the Sun's bright disk precisely because the Sun is 400x larger but also 400x farther away.
+      </p>
+    </div>
+
+    <div class="panel-actions">
+      <button id="btn-focus-target" class="panel-btn primary">
+        <span>Center View</span>
+      </button>
+      <button id="btn-trigger-eclipse" class="panel-btn eclipse-btn">
+        <span>Eclipse View &#9678;</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Bottom Interactive Dock (Planet Selector & Timeline controls) -->
+  <footer class="bottom-dock">
+    <!-- Time & Simulation Controls -->
+    <div class="sim-controls glass-panel">
+      <div class="control-cluster">
+        <button id="btn-play-pause" class="dock-btn" title="Pause / Resume Orbits">
+          <span id="play-pause-icon">&#10074;&#10074;</span>
+        </button>
+        <button id="btn-reset-view" class="dock-btn" title="Top-Down Overview">
+          <span>&#8862;</span>
+        </button>
+        <button id="btn-toggle-orbits" class="dock-btn active" title="Toggle Orbit Lines">
+          <span>&#9711;</span>
+        </button>
+      </div>
+
+      <div class="speed-slider-wrap">
+        <span class="slider-label">Orbit Speed</span>
+        <input type="range" id="speed-slider" min="0" max="5" value="1" step="0.25">
+        <span id="speed-val" class="speed-indicator">1.0x</span>
+      </div>
+    </div>
+
+    <!-- Planet Selector Pill Bar -->
+    <nav class="planet-selector-bar glass-panel" id="planet-nav">
+      <button class="planet-pill active" data-target="sun">
+        <span class="pill-dot sun-dot"></span>
+        <span class="pill-name">Sun</span>
+      </button>
+      <button class="planet-pill" data-target="mercury">
+        <span class="pill-dot mercury-dot"></span>
+        <span class="pill-name">Mercury</span>
+      </button>
+      <button class="planet-pill" data-target="venus">
+        <span class="pill-dot venus-dot"></span>
+        <span class="pill-name">Venus</span>
+      </button>
+      <button class="planet-pill" data-target="earth">
+        <span class="pill-dot earth-dot"></span>
+        <span class="pill-name">Earth</span>
+      </button>
+      <button class="planet-pill highlight-pill" data-target="moon">
+        <span class="pill-dot moon-dot"></span>
+        <span class="pill-name">Moon (Eclipse)</span>
+      </button>
+      <button class="planet-pill" data-target="mars">
+        <span class="pill-dot mars-dot"></span>
+        <span class="pill-name">Mars</span>
+      </button>
+      <button class="planet-pill" data-target="jupiter">
+        <span class="pill-dot jupiter-dot"></span>
+        <span class="pill-name">Jupiter</span>
+      </button>
+      <button class="planet-pill" data-target="saturn">
+        <span class="pill-dot saturn-dot"></span>
+        <span class="pill-name">Saturn</span>
+      </button>
+      <button class="planet-pill" data-target="uranus">
+        <span class="pill-dot uranus-dot"></span>
+        <span class="pill-name">Uranus</span>
+      </button>
+      <button class="planet-pill" data-target="neptune">
+        <span class="pill-dot neptune-dot"></span>
+        <span class="pill-name">Neptune</span>
+      </button>
+    </nav>
+  </footer>
+
+  <!-- Interactive Hints -->
+  <div class="interactive-hint">
+    <span>&#128430; Left Click + Drag to Rotate &bull; Scroll to Zoom &bull; Click Planet to Inspect</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
